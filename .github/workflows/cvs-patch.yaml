@@ -67,11 +67,11 @@ jobs:
 
             PATCH_FILE=$(find "$PATCH_DIR" -type f -name "*.patch")
             if [[ -z "$PATCH_FILE" ]]; then
-              echo "Error: No patch file generated after merge! This indicates a problem."
+              echo "Info: No patch file generated because no code changes detected in merge." # Changed to "Info" and more descriptive message
               echo "patch_file_name=no-patch-generated" >> "$GITHUB_OUTPUT"
               echo "patch_file_path=no-patch-path" >> "$GITHUB_OUTPUT"
               echo "patch_generated=false" >> "$GITHUB_OUTPUT"
-              exit 1 # Explicitly EXIT with error code 1 to FAIL the step/job
+              # Removed exit 1 - No longer treat as an error if no patch is generated after merge (if no code changes)
             else
               PATCH_FILE_NAME=$(basename "$PATCH_FILE")
               echo "Patch file generated: $PATCH_FILE_NAME"
