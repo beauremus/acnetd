@@ -9,7 +9,7 @@ on:
 jobs:
   generate_cvs_patch:
     runs-on: ubuntu-latest
-    outputs: # Define job outputs
+    outputs:
       patch_file_name: ${{ steps.generate_patch.outputs.patch_file_name }}
       patch_file_path: ${{ steps.generate_patch.outputs.patch_file_path }}
       patch_generated: ${{ steps.generate_patch.outputs.patch_generated }}
@@ -76,37 +76,54 @@ jobs:
           fi
         shell: /usr/bin/bash -e {0}
 
-      - name: Create GitHub Release with Patch
-        if: steps.generate_patch.outputs.patch_generated == 'true'
-        uses: softprops/action-gh-release@v1
+  create_github_release:
+    needs: generate_cvs_patch
+    runs-on: ubuntu-latest
+    if: ${{ needs.generate_cvs_patch.outputs.patch_generated == 'true' }}
+    steps:
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: cvs-sync-release
-          name: CVS Sync Patch - Commit ${{ github.sha }}
+          name: CVS Patch Release - Commit ${{ github.sha }}
           body: |
-            A patch file has been generated for the latest commit pushed to `main`: `${{ github.sha }}`.
+            ## Patch File Generated
 
-            **Instructions to apply this patch to your CVS working copy:**
+            A patch file has been automatically generated from the latest changes merged into the `main` branch.
 
-            1. **Download the attached patch file** (`${{ job.outputs.patch_file_name }}`) from this release.
+            1. **Download the attached patch file from this release.**
+
+            **Patch File Name:** ${{ needs.generate_cvs_patch.outputs.patch_file_name }}
+            **Patch File Path:** ${{ needs.generate_cvs_patch.outputs.patch_file_path }}
+
             2. **Transfer the patch file** to a machine with access to your CVS pserver and your CVS working copy.
             3. **Login to the CVS-capable node.**
             4. **Identify the *next* release to apply:**  Consult your CVS repository for the latest `git-hash-*` tag. The release to apply is the one for the Git commit *after* the commit hash in the latest CVS tag (or the very first release if no `git-hash-*` tags exist yet). **In most cases, you will simply apply the releases in the order they are created.**
             5. **Navigate to the root directory of your CVS working copy** in the terminal.
             6. **Apply the patch using the `patch` command:**
-               ```bash
-               patch -p1 < ${{ job.outputs.patch_file_name }}
-               ```
+
+            ```bash
+            patch -p1 < ${{ needs.generate_cvs_patch.outputs.patch_file_path }}
+            ```
+            
             7. **Resolve any conflicts** reported by the `patch` command manually in your CVS working copy. Use `cvs update -j <conflicting_revision>` if needed.
             8. **Build and thoroughly test** the build process in the CVS environment after applying the patch.
             9. **Commit the changes to CVS:**
+            
                ```bash
                cvs commit -m "Sync from Git - Commit ${{ github.sha }}"
                ```
+               
             10. **Crucially, create a CVS tag *immediately* after a *successful* CVS commit:**
+            
                 ```bash
                 cvs tag git-hash-${{ github.sha }}
                 ```
+                
                 **Use the Git commit SHA `${{ github.sha }}` from this GitHub Release in the CVS tag name.** This tag is essential for tracking the CVS sync state and identifying the next release to apply.
-
+          draft: false
+          prerelease: false
           files: |
-            ${{ job.outputs.patch_file_path }}
+            ${{ steps.generate_patch.outputs.patch_file_path }} # Attach the patch file to the release
