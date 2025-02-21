@@ -37,29 +37,47 @@ jobs:
           # Check if it's the initial commit (still handle initial commit gracefully)
           if ! git rev-parse --short HEAD~1 > /dev/null 2>&1; then
             echo "Initial commit detected. Skipping patch generation for the first commit."
-            echo "patch_file_name=no-patch-generated" >> "$GITHUB_OUTPUT" # Set output using Environment File
-            echo "patch_file_path=no-patch-path" >> "$GITHUB_OUTPUT"       # Set output using Environment File
-            echo "patch_generated=false" >> "$GITHUB_OUTPUT"             # Set output using Environment File
+            echo "patch_file_name=no-patch-generated" >> "$GITHUB_OUTPUT"
+            echo "patch_file_path=no-patch-path" >> "$GITHUB_OUTPUT"
+            echo "patch_generated=false" >> "$GITHUB_OUTPUT"
           else
             # Generate patch for the range of commits from merge-base to HEAD
             MERGE_BASE=$(git merge-base origin/main HEAD)
             COMMIT_RANGE="${MERGE_BASE}..HEAD"
             echo "Merge base commit: $MERGE_BASE"
             echo "Commit range for patch: $COMMIT_RANGE"
+
+            # *** Verify Commit Range Diff ***
+            echo "--- Verify Commit Range Diff (git diff --stat) ---"
+            git diff --stat "$COMMIT_RANGE"
+            echo "--- End Verify Commit Range Diff ---"
+
+            # *** Verify Working Directory ***
+            echo "--- Working Directory (pwd) ---"
+            pwd
+            echo "--- End Working Directory ---"
+
             git format-patch --no-stat -o "$PATCH_DIR" "$COMMIT_RANGE"
+
+            # *** List files in patches directory ***
+            echo "--- Files in patches directory (ls -l $PATCH_DIR) ---"
+            ls -l "$PATCH_DIR"
+            echo "--- End Files in patches directory ---"
+
+
             PATCH_FILE=$(find "$PATCH_DIR" -type f -name "*.patch")
             if [[ -z "$PATCH_FILE" ]]; then
               echo "Error: No patch file generated after merge! This indicates a problem."
-              echo "patch_file_name=no-patch-generated" >> "$GITHUB_OUTPUT" # Set output using Environment File
-              echo "patch_file_path=no-patch-path" >> "$GITHUB_OUTPUT"       # Set output using Environment File
-              echo "patch_generated=false" >> "$GITHUB_OUTPUT"             # Set output using Environment File
+              echo "patch_file_name=no-patch-generated" >> "$GITHUB_OUTPUT"
+              echo "patch_file_path=no-patch-path" >> "$GITHUB_OUTPUT"
+              echo "patch_generated=false" >> "$GITHUB_OUTPUT"
               exit 1 # Explicitly EXIT with error code 1 to FAIL the step/job
             else
               PATCH_FILE_NAME=$(basename "$PATCH_FILE")
               echo "Patch file generated: $PATCH_FILE_NAME"
-              echo "patch_file_name=$PATCH_FILE_NAME" >> "$GITHUB_OUTPUT"   # Set output using Environment File
-              echo "patch_file_path=$PATCH_FILE" >> "$GITHUB_OUTPUT"         # Set output using Environment File
-              echo "patch_generated=true" >> "$GITHUB_OUTPUT"              # Set output using Environment File
+              echo "patch_file_name=$PATCH_FILE_NAME" >> "$GITHUB_OUTPUT"
+              echo "patch_file_path=$PATCH_FILE" >> "$GITHUB_OUTPUT"
+              echo "patch_generated=true" >> "$GITHUB_OUTPUT"
             fi
           fi
         shell: /usr/bin/bash -e {0}
