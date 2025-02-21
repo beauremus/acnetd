@@ -86,7 +86,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: cvs-sync-release
+          tag_name: cvs-sync-release-${{ github.run_id }}
           release_name: CVS Patch Release - Commit ${{ github.sha }}
           body: |
             ## Patch File Generated
