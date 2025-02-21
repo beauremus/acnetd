@@ -35,25 +35,43 @@ jobs:
           if ! git rev-parse --short HEAD~1 > /dev/null 2>&1; then
             echo "Initial commit detected. Skipping patch generation for the first commit."
             echo "patch_file_name=no-patch-generated" >> "$GITHUB_OUTPUT"
+            echo "GITHUB_OUTPUT content after setting patch_file_name=no-patch-generated:"
+            cat "$GITHUB_OUTPUT"
             echo "patch_file_path=no-patch-path" >> "$GITHUB_OUTPUT"
+            echo "GITHUB_OUTPUT content after setting patch_file_path=no-patch-path:"
+            cat "$GITHUB_OUTPUT"
             echo "patch_generated=false" >> "$GITHUB_OUTPUT"
+            echo "GITHUB_OUTPUT content after setting patch_generated=false:"
+            cat "$GITHUB_OUTPUT"
           else
             # Generate patch for the range of commits from parent of HEAD to HEAD
-            COMMIT_RANGE="HEAD^1..HEAD" # or "HEAD~1..HEAD"
+            COMMIT_RANGE="HEAD^1..HEAD"
             echo "Commit range for patch: $COMMIT_RANGE"
             git format-patch --no-stat -o "$PATCH_DIR" "$COMMIT_RANGE"
             PATCH_FILE=$(find "$PATCH_DIR" -type f -name "*.patch")
             if [[ -z "$PATCH_FILE" ]]; then
               echo "Info: No patch file generated because no code changes detected in merge (or possibly initial workflow run)."
               echo "patch_file_name=no-patch-generated" >> "$GITHUB_OUTPUT"
+              echo "GITHUB_OUTPUT content after setting patch_file_name=no-patch-generated:"
+              cat "$GITHUB_OUTPUT"
               echo "patch_file_path=no-patch-path" >> "$GITHUB_OUTPUT"
+              echo "GITHUB_OUTPUT content after setting patch_file_path=no-patch-path:"
+              cat "$GITHUB_OUTPUT"
               echo "patch_generated=false" >> "$GITHUB_OUTPUT"
+              echo "GITHUB_OUTPUT content after setting patch_generated=false:"
+              cat "$GITHUB_OUTPUT"
             else
               PATCH_FILE_NAME=$(basename "$PATCH_FILE")
               echo "Patch file generated: $PATCH_FILE_NAME"
               echo "patch_file_name=$PATCH_FILE_NAME" >> "$GITHUB_OUTPUT"
+              echo "GITHUB_OUTPUT content after setting patch_file_name=$PATCH_FILE_NAME:"
+              cat "$GITHUB_OUTPUT"
               echo "patch_file_path=$PATCH_FILE" >> "$GITHUB_OUTPUT"
+              echo "GITHUB_OUTPUT content after setting patch_file_path=$PATCH_FILE:"
+              cat "$GITHUB_OUTPUT"
               echo "patch_generated=true" >> "$GITHUB_OUTPUT"
+              echo "GITHUB_OUTPUT content after setting patch_generated=true:"
+              cat "$GITHUB_OUTPUT"
             fi
           fi
         shell: /usr/bin/bash -e {0}
