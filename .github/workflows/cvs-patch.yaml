@@ -42,7 +42,11 @@ jobs:
             echo "::set-output name=patch_generated::false"
           else
             # Generate patch for the range of commits from merge-base to HEAD
-            git format-patch --no-stat -o "$PATCH_DIR" $(git merge-base origin/main HEAD)..HEAD
+            MERGE_BASE=$(git merge-base origin/main HEAD)
+            COMMIT_RANGE="${MERGE_BASE}..HEAD"
+            echo "Merge base commit: $MERGE_BASE"
+            echo "Commit range for patch: $COMMIT_RANGE"
+            git format-patch --no-stat -o "$PATCH_DIR" "$COMMIT_RANGE"
             PATCH_FILE=$(find "$PATCH_DIR" -type f -name "*.patch")
             if [[ -z "$PATCH_FILE" ]]; then
               echo "No patch file generated. (This should not happen normally after merge)"
@@ -57,6 +61,7 @@ jobs:
               echo "::set-output name=patch_generated::true"
             fi
           fi
+        shell: /usr/bin/bash -e {0}
 
       - name: Create GitHub Release with Patch
         if: steps.generate_patch.outputs.patch_generated == 'true'
