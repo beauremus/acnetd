@@ -87,7 +87,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: cvs-sync-release
-          name: CVS Patch Release - Commit ${{ github.sha }}
+          release_name: CVS Patch Release - Commit ${{ github.sha }}
           body: |
             ## Patch File Generated
 
@@ -125,5 +125,5 @@ jobs:
                 **Use the Git commit SHA `${{ github.sha }}` from this GitHub Release in the CVS tag name.** This tag is essential for tracking the CVS sync state and identifying the next release to apply.
           draft: false
           prerelease: false
-          files: |
-            ${{ steps.generate_patch.outputs.patch_file_path }} # Attach the patch file to the release
+          #files: |
+          #  ${{ steps.generate_patch.outputs.patch_file_path }} # Attach the patch file to the release
