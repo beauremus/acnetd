@@ -31,9 +31,6 @@ jobs:
           PATCH_DIR="patches"
           mkdir -p "$PATCH_DIR"
 
-          # Fetch origin/main to ensure merge-base is accurate
-          git fetch origin main:origin/main
-
           # Check if it's the initial commit (still handle initial commit gracefully)
           if ! git rev-parse --short HEAD~1 > /dev/null 2>&1; then
             echo "Initial commit detected. Skipping patch generation for the first commit."
@@ -41,37 +38,16 @@ jobs:
             echo "patch_file_path=no-patch-path" >> "$GITHUB_OUTPUT"
             echo "patch_generated=false" >> "$GITHUB_OUTPUT"
           else
-            # Generate patch for the range of commits from merge-base to HEAD
-            MERGE_BASE=$(git merge-base origin/main HEAD)
-            COMMIT_RANGE="${MERGE_BASE}..HEAD"
-            echo "Merge base commit: $MERGE_BASE"
+            # Generate patch for the range of commits from parent of HEAD to HEAD
+            COMMIT_RANGE="HEAD^1..HEAD" # or "HEAD~1..HEAD"
             echo "Commit range for patch: $COMMIT_RANGE"
-
-            # *** Verify Commit Range Diff ***
-            echo "--- Verify Commit Range Diff (git diff --stat) ---"
-            git diff --stat "$COMMIT_RANGE"
-            echo "--- End Verify Commit Range Diff ---"
-
-            # *** Verify Working Directory ***
-            echo "--- Working Directory (pwd) ---"
-            pwd
-            echo "--- End Working Directory ---"
-
             git format-patch --no-stat -o "$PATCH_DIR" "$COMMIT_RANGE"
-
-            # *** List files in patches directory ***
-            echo "--- Files in patches directory (ls -l $PATCH_DIR) ---"
-            ls -l "$PATCH_DIR"
-            echo "--- End Files in patches directory ---"
-
-
             PATCH_FILE=$(find "$PATCH_DIR" -type f -name "*.patch")
             if [[ -z "$PATCH_FILE" ]]; then
-              echo "Info: No patch file generated because no code changes detected in merge." # Changed to "Info" and more descriptive message
+              echo "Info: No patch file generated because no code changes detected in merge (or possibly initial workflow run)."
               echo "patch_file_name=no-patch-generated" >> "$GITHUB_OUTPUT"
               echo "patch_file_path=no-patch-path" >> "$GITHUB_OUTPUT"
               echo "patch_generated=false" >> "$GITHUB_OUTPUT"
-              # Removed exit 1 - No longer treat as an error if no patch is generated after merge (if no code changes)
             else
               PATCH_FILE_NAME=$(basename "$PATCH_FILE")
               echo "Patch file generated: $PATCH_FILE_NAME"
