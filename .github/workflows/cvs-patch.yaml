@@ -1,6 +1,7 @@
 name: Generate CVS Patch Per Commit on Main Push
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
