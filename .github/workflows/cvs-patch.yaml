@@ -18,7 +18,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Checkout all commits
 
       - name: Set up Git identity
         run: |
@@ -35,14 +35,8 @@ jobs:
           if ! git rev-parse --short HEAD~1 > /dev/null 2>&1; then
             echo "Initial commit detected. Skipping patch generation for the first commit."
             echo "patch_file_name=no-patch-generated" >> "$GITHUB_OUTPUT"
-            echo "GITHUB_OUTPUT content after setting patch_file_name=no-patch-generated:"
-            cat "$GITHUB_OUTPUT"
             echo "patch_file_path=no-patch-path" >> "$GITHUB_OUTPUT"
-            echo "GITHUB_OUTPUT content after setting patch_file_path=no-patch-path:"
-            cat "$GITHUB_OUTPUT"
             echo "patch_generated=false" >> "$GITHUB_OUTPUT"
-            echo "GITHUB_OUTPUT content after setting patch_generated=false:"
-            cat "$GITHUB_OUTPUT"
           else
             # Generate patch for the range of commits from parent of HEAD to HEAD
             COMMIT_RANGE="HEAD^1..HEAD"
@@ -52,26 +46,15 @@ jobs:
             if [[ -z "$PATCH_FILE" ]]; then
               echo "Info: No patch file generated because no code changes detected in merge (or possibly initial workflow run)."
               echo "patch_file_name=no-patch-generated" >> "$GITHUB_OUTPUT"
-              echo "GITHUB_OUTPUT content after setting patch_file_name=no-patch-generated:"
-              cat "$GITHUB_OUTPUT"
               echo "patch_file_path=no-patch-path" >> "$GITHUB_OUTPUT"
-              echo "GITHUB_OUTPUT content after setting patch_file_path=no-patch-path:"
-              cat "$GITHUB_OUTPUT"
               echo "patch_generated=false" >> "$GITHUB_OUTPUT"
-              echo "GITHUB_OUTPUT content after setting patch_generated=false:"
-              cat "$GITHUB_OUTPUT"
+              exit 1 # Exit with error to prevent further progress and indicate a problem with workflow
             else
               PATCH_FILE_NAME=$(basename "$PATCH_FILE")
               echo "Patch file generated: $PATCH_FILE_NAME"
               echo "patch_file_name=$PATCH_FILE_NAME" >> "$GITHUB_OUTPUT"
-              echo "GITHUB_OUTPUT content after setting patch_file_name=$PATCH_FILE_NAME:"
-              cat "$GITHUB_OUTPUT"
               echo "patch_file_path=$PATCH_FILE" >> "$GITHUB_OUTPUT"
-              echo "GITHUB_OUTPUT content after setting patch_file_path=$PATCH_FILE:"
-              cat "$GITHUB_OUTPUT"
               echo "patch_generated=true" >> "$GITHUB_OUTPUT"
-              echo "GITHUB_OUTPUT content after setting patch_generated=true:"
-              cat "$GITHUB_OUTPUT"
             fi
           fi
         shell: /usr/bin/bash -e {0}
@@ -82,6 +65,7 @@ jobs:
     if: ${{ needs.generate_cvs_patch.outputs.patch_generated == 'true' }}
     steps:
       - name: Create GitHub Release
+        id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -125,5 +109,14 @@ jobs:
                 **Use the Git commit SHA `${{ github.sha }}` from this GitHub Release in the CVS tag name.** This tag is essential for tracking the CVS sync state and identifying the next release to apply.
           draft: false
           prerelease: false
-          #files: |
-          #  ${{ steps.generate_patch.outputs.patch_file_path }} # Attach the patch file to the release
+
+      - name: Upload Release Asset
+        if: ${{ needs.generate_cvs_patch.outputs.patch_generated == 'true' }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ needs.generate_cvs_patch.outputs.patch_file_path }}
+          asset_name: ${{ needs.generate_cvs_patch.outputs.patch_file_name }}
+          asset_content_type: text/plain
