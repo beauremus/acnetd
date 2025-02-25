@@ -95,16 +95,16 @@ jobs:
             9. **Commit the changes to CVS:**
             
                ```bash
-               cvs commit -m "Sync from Git - Commit ${{ github.sha }}"
+               cvs commit -m "Sync from Git - Commit ${{ steps.generate_patch.outputs.head_commit_short }}"
                ```
                
             10. **Crucially, create a CVS tag *immediately* after a *successful* CVS commit:**
             
                 ```bash
-                cvs tag git-hash-${{ github.sha }}
+                cvs tag git-hash-${{ steps.generate_patch.outputs.head_commit_short }}
                 ```
                 
-                **Use the Git commit SHA `${{ github.sha }}` from this GitHub Release in the CVS tag name.** This tag is essential for tracking the CVS sync state and identifying the next release to apply.
+                **Use the Git commit hash `${{ steps.generate_patch.outputs.head_commit_short }}` from this GitHub Release in the CVS tag name.** This tag is essential for tracking the CVS sync state and identifying the next release to apply.
           draft: false
           prerelease: false
           files: ${{ steps.generate_patch.outputs.patch_file_path }}
