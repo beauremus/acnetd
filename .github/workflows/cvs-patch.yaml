@@ -48,9 +48,15 @@ jobs:
             else
               PATCH_FILE_NAME=$(basename "$PATCH_FILE")
               echo "Patch file generated: $PATCH_FILE_NAME"
+
+              # Get abbreviated commit hash for HEAD
+              HEAD_COMMIT_SHORT=$(git rev-parse --short HEAD)
+              echo "Abbreviated HEAD commit hash: $HEAD_COMMIT_SHORT"
+              
               echo "patch_file_name=$PATCH_FILE_NAME" >> "$GITHUB_OUTPUT"
               echo "patch_file_path=$PATCH_FILE" >> "$GITHUB_OUTPUT"
               echo "patch_generated=true" >> "$GITHUB_OUTPUT"
+              echo "head_commit_short=$HEAD_COMMIT_SHORT" >> "$GITHUB_OUTPUT"
             fi
           fi
         shell: /usr/bin/bash -e {0} # Use bash instead of sh
@@ -63,7 +69,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: cvs-sync-release-${{ github.run_id }}
-          name: CVS Patch Release - Commit ${{ github.sha }}
+          name: CVS Patch Release - Commit ${{ steps.generate_patch.outputs.head_commit_short }}
           body: |
             ## Patch File Generated
 
